@@ -7,6 +7,7 @@ $ProgressPreference = 'SilentlyContinue'
 
 $Root = 'C:\PS'
 $WulfRoot = Join-Path $Root 'WULF'
+$InternalToolsRoot = Join-Path $Root 'tools'
 $Binaries = Join-Path $Root 'binaries'
 $CommandExtensions = @('.exe', '.cmd', '.bat', '.com')
 
@@ -92,8 +93,13 @@ foreach ($directory in $directories) {
     $full = Get-NormalizedPath $directory.FullName
     if (-not $full) { continue }
 
-    if ($full.Equals((Get-NormalizedPath $WulfRoot), [StringComparison]::OrdinalIgnoreCase) -or
-        $full.StartsWith((Get-NormalizedPath $WulfRoot) + '\', [StringComparison]::OrdinalIgnoreCase)) {
+    $wulfNormalized = Get-NormalizedPath $WulfRoot
+    $toolsNormalized = Get-NormalizedPath $InternalToolsRoot
+
+    if ($full.Equals($wulfNormalized, [StringComparison]::OrdinalIgnoreCase) -or
+        $full.StartsWith($wulfNormalized + '\', [StringComparison]::OrdinalIgnoreCase) -or
+        $full.Equals($toolsNormalized, [StringComparison]::OrdinalIgnoreCase) -or
+        $full.StartsWith($toolsNormalized + '\', [StringComparison]::OrdinalIgnoreCase)) {
         continue
     }
 
