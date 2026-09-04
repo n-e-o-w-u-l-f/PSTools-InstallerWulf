@@ -55,7 +55,7 @@ The current selectable catalog includes:
 
 On a fresh installation, yt-dlp, tdl, and you-get are selected by default. Python-based tools require an available Python 3 installation and are isolated in their own virtual environments; only small command shims are placed in `C:\PS\binaries`.
 
-`tdl-CompanionWulf` is installed from its own upstream Git repository into an isolated virtual environment. It reuses the separately managed `tdl.exe` from `C:\PS\binaries` instead of bundling or redistributing a second tdl binary. Its SQLite queue database is stored in the user's local application-data area.
+`tdl-CompanionWulf` is installed from its own upstream source archive into an isolated virtual environment. It reuses the separately managed `tdl.exe` from `C:\PS\binaries` instead of bundling or redistributing a second tdl binary. Its SQLite queue database is stored in the user's local application-data area.
 
 ## Usage
 
@@ -91,16 +91,16 @@ https://download.sysinternals.com/files/PSTools.zip
 
 GitHub-hosted tools are resolved through each project's latest release metadata and matched against a Windows-specific asset rule stored in `WULF/tools.json`. This avoids pinning the installer to a stale release URL while keeping downloads on the original project source. When GitHub supplies a `sha256:` digest for a release asset, the downloaded file is verified before it is installed or extracted.
 
-Python-based tools are installed from their Python package distribution or an explicitly configured upstream Git package into dedicated virtual environments.
+Python-based tools are installed from their Python package distribution or an explicitly configured upstream source archive into dedicated virtual environments.
 
 ## Candidates intentionally not included in the command catalog
 
-Some requested projects are not suitable for the same portable Windows command workflow without additional dependency or packaging logic:
+Some requested projects are Windows-capable but do not yet fit the same portable command workflow without additional dependency or package-format handling:
 
 - **MEGAcmd**: Windows-capable, but the provided GitHub repository does not publish GitHub release assets; it needs a separate official-installer integration.
-- **tgdl (Kikks/tgdl)**: no current GitHub release asset suitable for the automatic Windows release workflow.
-- **RipMe**: current releases are Java `.jar` packages and require a compatible Java runtime; dependency management should be handled explicitly before adding it.
-- **signal-cli**: current upstream release assets are not Windows-native packages.
+- **tgdl (Kikks/tgdl)**: no current GitHub release asset suitable for the automatic Windows release workflow was identified.
+- **RipMe**: cross-platform and Windows-capable, but distributed as a Java `.jar`; a Java runtime and a managed launcher need to be handled explicitly before adding it.
+- **signal-cli**: upstream explicitly supports Windows and bundles the Windows native library, but the JVM distribution currently requires a Java 25 runtime. Java/runtime detection, `.tar.gz` extraction and launcher handling should be added before enabling it in the catalog.
 - **cobalt**: primarily a self-hosted service/API rather than a portable Windows command utility.
 - **vysheng/tg**: not a suitable current native Windows package for this installer model.
 - **curl**: modern Windows 10/11 systems already ship a system-managed curl; replacing the OS copy from this installer would create unnecessary precedence/version ambiguity.
