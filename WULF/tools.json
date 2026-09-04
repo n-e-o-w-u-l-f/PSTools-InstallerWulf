@@ -170,6 +170,34 @@
       "managedPaths": ["binaries\\fd.exe"]
     },
     {
+      "id": "fzf",
+      "name": "fzf",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/junegunn/fzf",
+      "installType": "github-zip-single",
+      "repo": "junegunn/fzf",
+      "assetRegex": "^fzf-.*-windows_amd64\\.zip$",
+      "extractName": "fzf.exe",
+      "target": "binaries\\fzf.exe",
+      "detectPath": "binaries\\fzf.exe",
+      "managedPaths": ["binaries\\fzf.exe"]
+    },
+    {
+      "id": "bat",
+      "name": "bat",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/sharkdp/bat",
+      "installType": "github-zip-single",
+      "repo": "sharkdp/bat",
+      "assetRegex": "^bat-v.*-x86_64-pc-windows-msvc\\.zip$",
+      "extractName": "bat.exe",
+      "target": "binaries\\bat.exe",
+      "detectPath": "binaries\\bat.exe",
+      "managedPaths": ["binaries\\bat.exe"]
+    },
+    {
       "id": "doggo",
       "name": "doggo",
       "menu": true,
