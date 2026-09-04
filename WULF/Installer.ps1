@@ -1,5 +1,6 @@
 param(
-    [switch]$NoPause
+    [switch]$NoPause,
+    [switch]$Validate
 )
 
 $ErrorActionPreference = 'Stop'
@@ -109,12 +110,13 @@ function Stop-Ui {
 
 function Wait-ForExit {
     param(
-        [string]$Message = '[OK] ENTER zum Schliessen'
+        [string]$Message = '[OK] ENTER zum Schliessen',
+        [string]$Action = 'Vorgang beendet'
     )
 
     if ($NoPause) { return }
 
-    Write-UiState 'Vorgang beendet' $Message
+    Write-UiState $Action $Message
     while ($true) {
         $key = [Console]::ReadKey($true)
         if ($key.Key -eq [ConsoleKey]::Enter) { break }
@@ -185,6 +187,24 @@ function Invoke-Download {
         -UseBasicParsing `
         -Headers @{ 'User-Agent' = 'PSTools-InstallerWulf' } `
         -OutFile $Destination
+}
+
+function Assert-GitHubAssetDigest {
+    param(
+        $Asset,
+        [string]$Path
+    )
+
+    $digest = [string]$Asset.digest
+    if ([string]::IsNullOrWhiteSpace($digest)) { return }
+    if ($digest -notmatch '^sha256:([0-9a-fA-F]{64})$') { return }
+
+    $expected = $Matches[1].ToUpperInvariant()
+    $actual = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash.ToUpperInvariant()
+
+    if ($actual -ne $expected) {
+        throw "SHA-256 Pruefung fehlgeschlagen: $($Asset.name)"
+    }
 }
 
 function Get-GitHubReleaseAsset {
@@ -457,6 +477,7 @@ function Install-Tool {
 
             Write-UiState ("Installiere/Aktualisiere {0} ..." -f $Tool.name) ("Download: {0}" -f $asset.name)
             Invoke-Download ([string]$asset.browser_download_url) $download
+            Assert-GitHubAssetDigest $asset $download
 
             New-Item -ItemType Directory -Path (Split-Path -Parent $target) -Force | Out-Null
             Move-Item -LiteralPath $download -Destination $target -Force
@@ -469,6 +490,7 @@ function Install-Tool {
 
             Write-UiState ("Installiere/Aktualisiere {0} ..." -f $Tool.name) ("Download: {0}" -f $asset.name)
             Invoke-Download ([string]$asset.browser_download_url) $zip
+            Assert-GitHubAssetDigest $asset $zip
 
             New-Item -ItemType Directory -Path $scratch -Force | Out-Null
             try {
@@ -497,6 +519,7 @@ function Install-Tool {
 
             Write-UiState ("Installiere/Aktualisiere {0} ..." -f $Tool.name) ("Download: {0}" -f $asset.name)
             Invoke-Download ([string]$asset.browser_download_url) $gzip
+            Assert-GitHubAssetDigest $asset $gzip
             Expand-GZipFile $gzip $tempTarget
             Move-Item -LiteralPath $tempTarget -Destination $target -Force
             Remove-Item -LiteralPath $gzip -Force -ErrorAction SilentlyContinue
@@ -509,6 +532,7 @@ function Install-Tool {
 
             Write-UiState ("Installiere/Aktualisiere {0} ..." -f $Tool.name) ("Download: {0}" -f $asset.name)
             Invoke-Download ([string]$asset.browser_download_url) $zip
+            Assert-GitHubAssetDigest $asset $zip
             Expand-ZipNormalized $zip $target
             Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
         }
@@ -853,8 +877,109 @@ function Update-SystemPath {
     Write-UiState 'Aktualisiere SYSTEM-PATH ...' ([string]$result)
 }
 
+function Invoke-Validation {
+    $manifest = Read-Manifest
+    $tools = @($manifest.tools | Where-Object { [bool]$_.menu })
+    $errors = New-Object 'System.Collections.Generic.List[string]'
+    $warnings = New-Object 'System.Collections.Generic.List[string]'
+    $knownTypes = @('github-exe','github-zip-single','github-gzip-exe','github-zip','pip-venv')
+    $ids = New-Object 'System.Collections.Generic.HashSet[string]' ([StringComparer]::OrdinalIgnoreCase)
+
+    Write-UiState 'Validiere Installer ...' 'Pruefe Manifest und Microsoft PsTools Quelle'
+
+    if (-not $manifest.schemaVersion -or [int]$manifest.schemaVersion -ne 1) {
+        $errors.Add('tools.json: schemaVersion muss 1 sein')
+    }
+
+    try {
+        $response = Invoke-WebRequest -Uri 'https://download.sysinternals.com/files/PSTools.zip' `
+            -UseBasicParsing `
+            -Method Head `
+            -Headers @{ 'User-Agent' = 'PSTools-InstallerWulf' }
+        if ([int]$response.StatusCode -lt 200 -or [int]$response.StatusCode -ge 400) {
+            throw "HTTP $($response.StatusCode)"
+        }
+    } catch {
+        $errors.Add(('Microsoft PsTools: {0}' -f $_.Exception.Message))
+    }
+
+    foreach ($tool in $tools) {
+        $id = [string]$tool.id
+        $name = [string]$tool.name
+        $type = [string]$tool.installType
+
+        Write-UiState ("Validiere {0} ..." -f $name) ("InstallType: {0}" -f $type)
+
+        if ([string]::IsNullOrWhiteSpace($id) -or -not $ids.Add($id)) {
+            $errors.Add(("tools.json: ungueltige oder doppelte ID '{0}'" -f $id))
+            continue
+        }
+
+        if ($knownTypes -notcontains $type) {
+            $errors.Add(("{0}: unbekannter InstallType '{1}'" -f $name, $type))
+            continue
+        }
+
+        if ([string]::IsNullOrWhiteSpace([string]$tool.detectPath)) {
+            $errors.Add(("{0}: detectPath fehlt" -f $name))
+        }
+
+        if ($type -like 'github-*') {
+            if ([string]::IsNullOrWhiteSpace([string]$tool.repo) -or
+                [string]::IsNullOrWhiteSpace([string]$tool.assetRegex)) {
+                $errors.Add(("{0}: repo oder assetRegex fehlt" -f $name))
+                continue
+            }
+
+            try {
+                $asset = Get-GitHubReleaseAsset ([string]$tool.repo) ([string]$tool.assetRegex)
+                Write-UiState ("Validiere {0} ..." -f $name) ("[OK] {0}" -f $asset.name)
+            } catch {
+                $errors.Add(("{0}: {1}" -f $name, $_.Exception.Message))
+            }
+        }
+        elseif ($type -eq 'pip-venv') {
+            if ([string]::IsNullOrWhiteSpace([string]$tool.package) -or
+                [string]::IsNullOrWhiteSpace([string]$tool.command)) {
+                $errors.Add(("{0}: package oder command fehlt" -f $name))
+            }
+            elseif (-not (Test-ToolRequirement $tool)) {
+                $warnings.Add(("{0}: Python 3 ist auf diesem System nicht verfuegbar" -f $name))
+            }
+        }
+    }
+
+    if ($errors.Count -gt 0) {
+        $detail = '[FEHLER] {0} Validierungsfehler - erster: {1}' -f $errors.Count, $errors[0]
+        Write-UiState 'Validierung abgeschlossen' $detail @() 'ENTER zum Schliessen'
+    }
+    elseif ($warnings.Count -gt 0) {
+        $detail = '[WARNUNG] Manifest/Downloads OK - {0} lokale Voraussetzung(en) fehlen' -f $warnings.Count
+        Write-UiState 'Validierung abgeschlossen' $detail @() 'ENTER zum Schliessen'
+    }
+    else {
+        $detail = '[OK] Manifest, PsTools und {0} Tool-Eintraege validiert' -f $tools.Count
+        Write-UiState 'Validierung abgeschlossen' $detail @() 'ENTER zum Schliessen'
+    }
+
+    if (-not $NoPause) {
+        while ($true) {
+            $key = [Console]::ReadKey($true)
+            if ($key.Key -eq [ConsoleKey]::Enter) { break }
+        }
+    }
+
+    if ($errors.Count -gt 0) { return 1 }
+    return 0
+}
+
 try {
     Start-Ui
+
+    if ($Validate) {
+        $validationExitCode = Invoke-Validation
+        exit $validationExitCode
+    }
 
     Write-UiState 'Pruefe Administratorrechte ...' 'Windows-Administrator erforderlich'
     if (-not (Test-Administrator)) {
@@ -868,6 +993,7 @@ try {
             '-File', ('"{0}"' -f $PSCommandPath)
         )
         if ($NoPause) { $arguments += '-NoPause' }
+        if ($Validate) { $arguments += '-Validate' }
 
         Start-Process -FilePath 'powershell.exe' -Verb RunAs -ArgumentList $arguments | Out-Null
         exit 0

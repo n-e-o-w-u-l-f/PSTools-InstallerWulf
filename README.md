@@ -61,7 +61,19 @@ Run:
 PSToolsWulfInstaller.bat
 ```
 
-Administrator elevation is requested when required. In the tool selection screen use the arrow keys to navigate, `SPACE` to toggle a tool, and `ENTER` to apply the desired state.
+Validate the manifest, Microsoft source, upstream GitHub release rules, and local prerequisites without changing `C:\PS`, ACLs, or the machine PATH:
+
+```bat
+PSToolsWulfInstaller.bat -Validate
+```
+
+For automated validation without waiting for input:
+
+```bat
+PSToolsWulfInstaller.bat -Validate -NoPause
+```
+
+Administrator elevation is requested only for the installation/management workflow when required. Validation does not request elevation. In the tool selection screen use the arrow keys to navigate, `SPACE` to toggle a tool, and `ENTER` to apply the desired state.
 
 The installer treats the selection as desired state: selected tools are installed or refreshed from upstream, deselected managed tools are removed, and PATH is synchronized afterward.
 
@@ -73,7 +85,7 @@ Microsoft PsTools is downloaded from the official Sysinternals download endpoint
 https://download.sysinternals.com/files/PSTools.zip
 ```
 
-GitHub-hosted tools are resolved through each project's latest release metadata and matched against a Windows-specific asset rule stored in `WULF/tools.json`. This avoids pinning the installer to a stale release URL while keeping downloads on the original project source.
+GitHub-hosted tools are resolved through each project's latest release metadata and matched against a Windows-specific asset rule stored in `WULF/tools.json`. This avoids pinning the installer to a stale release URL while keeping downloads on the original project source. When GitHub supplies a `sha256:` digest for a release asset, the downloaded file is verified before it is installed or extracted.
 
 Python-based tools are installed from their Python package distribution into dedicated virtual environments.
 
