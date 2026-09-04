@@ -129,6 +129,47 @@
       "requires": "python"
     },
     {
+      "id": "jq",
+      "name": "jq",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/jqlang/jq",
+      "installType": "github-exe",
+      "repo": "jqlang/jq",
+      "assetRegex": "^jq-windows-amd64\\.exe$",
+      "target": "binaries\\jq.exe",
+      "detectPath": "binaries\\jq.exe",
+      "managedPaths": ["binaries\\jq.exe"]
+    },
+    {
+      "id": "ripgrep",
+      "name": "ripgrep (rg)",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/BurntSushi/ripgrep",
+      "installType": "github-zip-single",
+      "repo": "BurntSushi/ripgrep",
+      "assetRegex": "^ripgrep-.*-x86_64-pc-windows-msvc\\.zip$",
+      "extractName": "rg.exe",
+      "target": "binaries\\rg.exe",
+      "detectPath": "binaries\\rg.exe",
+      "managedPaths": ["binaries\\rg.exe"]
+    },
+    {
+      "id": "fd",
+      "name": "fd",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/sharkdp/fd",
+      "installType": "github-zip-single",
+      "repo": "sharkdp/fd",
+      "assetRegex": "^fd-v.*-x86_64-pc-windows-msvc\\.zip$",
+      "extractName": "fd.exe",
+      "target": "binaries\\fd.exe",
+      "detectPath": "binaries\\fd.exe",
+      "managedPaths": ["binaries\\fd.exe"]
+    },
+    {
       "id": "doggo",
       "name": "doggo",
       "menu": true,
