@@ -72,7 +72,7 @@ $stops = @(
     @(8, 10, 48)
 )
 
-function Get-RgbAt([double]$x, [double]$phase, [double]$brightness) {
+function Get-RgbKeyAt([double]$x, [double]$phase, [double]$brightness) {
     $cycle = $stops.Count - 1
     $p = (($x + $phase) % 1.0)
     if ($p -lt 0) { $p += 1.0 }
@@ -87,11 +87,11 @@ function Get-RgbAt([double]$x, [double]$phase, [double]$brightness) {
     $g = [int][Math]::Round(($a[1] + (($b[1] - $a[1]) * $t)) * $brightness)
     $bl = [int][Math]::Round(($a[2] + (($b[2] - $a[2]) * $t)) * $brightness)
 
-    @(
-        [Math]::Min(190, [Math]::Max(0, $r)),
-        [Math]::Min(150, [Math]::Max(0, $g)),
-        [Math]::Min(180, [Math]::Max(0, $bl))
-    )
+    $r = [Math]::Min(190, [Math]::Max(0, $r))
+    $g = [Math]::Min(150, [Math]::Max(0, $g))
+    $bl = [Math]::Min(180, [Math]::Max(0, $bl))
+
+    return "$r;$g;$bl"
 }
 
 function Add-GradientRow(
@@ -111,26 +111,25 @@ function Add-GradientRow(
 
     $start = [Math]::Max(0, [int][Math]::Floor(($DrawWidth - $Text.Length) / 2))
     $den = [Math]::Max(1, $DrawWidth - 1)
+    $cellWidth = $(if ($DrawWidth -ge 180) { 3 } else { 2 })
 
     [void]$Builder.Append("$esc[$Row;1H")
 
-    $lastKey = ''
-    for ($i = 0; $i -lt $DrawWidth; $i++) {
-        $rgb = Get-RgbAt ($i / [double]$den) $Phase $Brightness
-        $key = "$($rgb[0]);$($rgb[1]);$($rgb[2])"
+    for ($i = 0; $i -lt $DrawWidth; $i += $cellWidth) {
+        $run = [Math]::Min($cellWidth, $DrawWidth - $i)
+        $sample = [Math]::Min($DrawWidth - 1, $i + (($run - 1) / 2.0))
+        $key = Get-RgbKeyAt ($sample / [double]$den) $Phase $Brightness
+        [void]$Builder.Append("$esc[48;2;$key" + 'm')
 
-        if ($key -ne $lastKey) {
-            [void]$Builder.Append("$esc[48;2;$key" + 'm')
-            $lastKey = $key
-        }
-
-        $char = ' '
-        $textIndex = $i - $start
-        if ($textIndex -ge 0 -and $textIndex -lt $Text.Length) {
-            $char = $Text[$textIndex]
-            [void]$Builder.Append("$esc[38;2;255;255;255m$char")
-        } else {
-            [void]$Builder.Append(' ')
+        for ($j = 0; $j -lt $run; $j++) {
+            $column = $i + $j
+            $textIndex = $column - $start
+            if ($textIndex -ge 0 -and $textIndex -lt $Text.Length) {
+                [void]$Builder.Append("$esc[38;2;255;255;255m")
+                [void]$Builder.Append($Text[$textIndex])
+            } else {
+                [void]$Builder.Append(' ')
+            }
         }
     }
 
@@ -158,38 +157,45 @@ function Add-CenteredLine(
     [void]$Builder.Append("$esc[$Row;${col}H$esc[$Color" + "m$Text$esc[0m")
 }
 
-function Read-State {
+$script:CachedState = [pscustomobject]@{
+    action='Initialisiere ...'
+    detail=''
+    menu=@()
+    hint=''
+}
+$script:CachedStateStamp = -1L
+
+function Read-StateCached {
     if (-not (Test-Path -LiteralPath $StatusFile)) {
-        return [pscustomobject]@{
-            action='Initialisiere ...'
-            detail=''
-            menu=@()
-            hint=''
-        }
+        return $script:CachedState
     }
 
     try {
+        $item = Get-Item -LiteralPath $StatusFile -ErrorAction Stop
+        $stamp = $item.LastWriteTimeUtc.Ticks
+        if ($stamp -eq $script:CachedStateStamp) {
+            return $script:CachedState
+        }
+
         $raw = Get-Content -LiteralPath $StatusFile -Raw -Encoding UTF8 -ErrorAction Stop
-        if ([string]::IsNullOrWhiteSpace($raw)) { throw 'empty' }
+        if ([string]::IsNullOrWhiteSpace($raw)) {
+            return $script:CachedState
+        }
 
         $state = $raw | ConvertFrom-Json -ErrorAction Stop
         $menu = @()
         if ($null -ne $state.menu) { $menu = @($state.menu) }
 
-        return [pscustomobject]@{
+        $script:CachedState = [pscustomobject]@{
             action=[string]$state.action
             detail=[string]$state.detail
             menu=$menu
             hint=[string]$state.hint
         }
-    } catch {
-        return [pscustomobject]@{
-            action='Initialisiere ...'
-            detail=''
-            menu=@()
-            hint=''
-        }
-    }
+        $script:CachedStateStamp = $stamp
+    } catch {}
+
+    return $script:CachedState
 }
 
 function Detail-Color([string]$Text) {
@@ -206,12 +212,16 @@ $clock = [Diagnostics.Stopwatch]::StartNew()
 $lastWidth = -1
 $lastHeight = -1
 $lastBodyKey = $null
+$lastStatePollMs = -1000.0
+$state = $script:CachedState
+$frameMs = 33.333
+$nextFrameMs = 0.0
 
 try {
     while (-not (Test-Path -LiteralPath $StopFile) -and (Test-ParentAlive)) {
         $layout = Get-Layout
-        $phase = ($clock.Elapsed.TotalSeconds * 0.18) % 1.0
-        $builder = New-Object System.Text.StringBuilder 32768
+        $phase = ($clock.Elapsed.TotalSeconds * 0.34) % 1.0
+        $builder = New-Object System.Text.StringBuilder 24576
 
         if ($layout.Width -ne $lastWidth -or $layout.Height -ne $lastHeight) {
             [void]$builder.Append("$esc[2J$esc[H")
@@ -221,17 +231,22 @@ try {
         }
 
         Add-GradientRow $builder 1 $head1 1.00 $phase $layout.DrawWidth
-        Add-GradientRow $builder 2 $head2 0.86 ($phase + 0.030) $layout.DrawWidth
-        Add-GradientRow $builder 3 ''     0.34 ($phase + 0.060) $layout.DrawWidth
-        Add-GradientRow $builder 4 ''     0.09 ($phase + 0.090) $layout.DrawWidth
+        Add-GradientRow $builder 2 $head2 0.82 ($phase + 0.030) $layout.DrawWidth
+        Add-GradientRow $builder 3 ''     0.28 ($phase + 0.060) $layout.DrawWidth
+        Add-GradientRow $builder 4 ''     0.055 ($phase + 0.090) $layout.DrawWidth
 
-        Add-GradientRow $builder $layout.Footer1 $foot1 0.96 ($phase + 0.020) $layout.DrawWidth
-        Add-GradientRow $builder $layout.Footer2 $foot2 0.70 ($phase + 0.050) $layout.DrawWidth
-        Add-GradientRow $builder $layout.Footer3 ''     0.38 ($phase + 0.080) $layout.DrawWidth
-        Add-GradientRow $builder $layout.Footer4 ''     0.17 ($phase + 0.110) $layout.DrawWidth
-        Add-GradientRow $builder $layout.Footer5 ''     0.055 ($phase + 0.140) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer1 $foot1 0.90 ($phase + 0.020) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer2 $foot2 0.60 ($phase + 0.050) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer3 ''     0.30 ($phase + 0.080) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer4 ''     0.11 ($phase + 0.110) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer5 ''     0.025 ($phase + 0.140) $layout.DrawWidth
 
-        $state = Read-State
+        $nowMs = $clock.Elapsed.TotalMilliseconds
+        if (($nowMs - $lastStatePollMs) -ge 80.0) {
+            $state = Read-StateCached
+            $lastStatePollMs = $nowMs
+        }
+
         $bodyKey = ($state | ConvertTo-Json -Compress -Depth 4) + "@$($layout.Width)x$($layout.Height)"
 
         if ($bodyKey -ne $lastBodyKey) {
@@ -268,7 +283,14 @@ try {
         }
 
         [Console]::Write($builder.ToString())
-        Start-Sleep -Milliseconds 40
+
+        $nextFrameMs += $frameMs
+        $delay = $nextFrameMs - $clock.Elapsed.TotalMilliseconds
+        if ($delay -gt 1.0) {
+            Start-Sleep -Milliseconds ([int][Math]::Floor($delay))
+        } elseif ($delay -lt -100.0) {
+            $nextFrameMs = $clock.Elapsed.TotalMilliseconds
+        }
     }
 }
 finally {
