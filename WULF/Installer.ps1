@@ -657,10 +657,10 @@ function Ensure-WindowsAppsRights {
         '-nobanner',
         '-s',
         (Join-Path $env:SystemRoot 'System32\icacls.exe'),
-        $WindowsApps,
+        ('"{0}"' -f $WindowsApps),
         '/grant',
         '*S-1-5-32-544:(OI)(CI)F',
-        ('{0}:(OI)(CI)F' -f $currentIdentity)
+        ('"{0}:(OI)(CI)F"' -f $currentIdentity)
     )
 
     if ((Invoke-ProcessLogged $psexec $arguments) -ne 0) {
