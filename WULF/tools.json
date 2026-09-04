@@ -1,0 +1,185 @@
+{
+  "schemaVersion": 1,
+  "defaults": {
+    "basePath": "C:\\PS",
+    "binariesPath": "C:\\PS\\binaries"
+  },
+  "tools": [
+    {
+      "id": "yt-dlp",
+      "name": "yt-dlp",
+      "menu": true,
+      "defaultSelected": true,
+      "homepage": "https://github.com/yt-dlp/yt-dlp",
+      "installType": "github-exe",
+      "repo": "yt-dlp/yt-dlp",
+      "assetRegex": "^yt-dlp\\.exe$",
+      "target": "binaries\\yt-dlp.exe",
+      "detectPath": "binaries\\yt-dlp.exe",
+      "managedPaths": [
+        "binaries\\yt-dlp.exe"
+      ]
+    },
+    {
+      "id": "tdl",
+      "name": "tdl",
+      "menu": true,
+      "defaultSelected": true,
+      "homepage": "https://github.com/iyear/tdl",
+      "installType": "github-zip-single",
+      "repo": "iyear/tdl",
+      "assetRegex": "^tdl_Windows_64bit\\.zip$",
+      "extractName": "tdl.exe",
+      "target": "binaries\\tdl.exe",
+      "detectPath": "binaries\\tdl.exe",
+      "managedPaths": [
+        "binaries\\tdl.exe"
+      ]
+    },
+    {
+      "id": "qscreen",
+      "name": "qscreen (qscn)",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/dualface/qscreen",
+      "installType": "github-gzip-exe",
+      "repo": "dualface/qscreen",
+      "assetRegex": "^qscn-windows-amd64\\.exe\\.gz$",
+      "target": "binaries\\qscn.exe",
+      "detectPath": "binaries\\qscn.exe",
+      "managedPaths": [
+        "binaries\\qscn.exe"
+      ]
+    },
+    {
+      "id": "you-get",
+      "name": "you-get",
+      "menu": true,
+      "defaultSelected": true,
+      "homepage": "https://github.com/soimort/you-get",
+      "installType": "pip-venv",
+      "package": "you-get",
+      "command": "you-get",
+      "target": "tools\\you-get",
+      "detectPath": "binaries\\you-get.cmd",
+      "managedPaths": [
+        "tools\\you-get",
+        "binaries\\you-get.cmd"
+      ],
+      "requires": "python"
+    },
+    {
+      "id": "spotdl",
+      "name": "spotDL",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/spotDL/spotify-downloader",
+      "installType": "github-exe",
+      "repo": "spotDL/spotify-downloader",
+      "assetRegex": "^spotdl-.*-win32\\.exe$",
+      "target": "binaries\\spotdl.exe",
+      "detectPath": "binaries\\spotdl.exe",
+      "managedPaths": [
+        "binaries\\spotdl.exe"
+      ]
+    },
+    {
+      "id": "aria2",
+      "name": "aria2",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/aria2/aria2",
+      "installType": "github-zip",
+      "repo": "aria2/aria2",
+      "assetRegex": "^aria2-.*-win-64bit-build1\\.zip$",
+      "target": "aria2",
+      "detectPath": "aria2",
+      "managedPaths": [
+        "aria2"
+      ],
+      "detectName": "aria2c.exe"
+    },
+    {
+      "id": "gallery-dl",
+      "name": "gallery-dl",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/mikf/gallery-dl",
+      "installType": "pip-venv",
+      "package": "gallery-dl",
+      "command": "gallery-dl",
+      "target": "tools\\gallery-dl",
+      "detectPath": "binaries\\gallery-dl.cmd",
+      "managedPaths": [
+        "tools\\gallery-dl",
+        "binaries\\gallery-dl.cmd"
+      ],
+      "requires": "python"
+    },
+    {
+      "id": "scdl",
+      "name": "scdl",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/scdl-org/scdl",
+      "installType": "pip-venv",
+      "package": "scdl",
+      "command": "scdl",
+      "target": "tools\\scdl",
+      "detectPath": "binaries\\scdl.cmd",
+      "managedPaths": [
+        "tools\\scdl",
+        "binaries\\scdl.cmd"
+      ],
+      "requires": "python"
+    },
+    {
+      "id": "doggo",
+      "name": "doggo",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/mr-karan/doggo",
+      "installType": "github-zip",
+      "repo": "mr-karan/doggo",
+      "assetRegex": "^doggo-windows-x86_64\\.zip$",
+      "target": "doggo",
+      "detectPath": "doggo",
+      "managedPaths": [
+        "doggo"
+      ],
+      "detectName": "doggo.exe"
+    },
+    {
+      "id": "bandwhich",
+      "name": "bandwhich",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/imsnif/bandwhich",
+      "installType": "github-zip",
+      "repo": "imsnif/bandwhich",
+      "assetRegex": "^bandwhich-.*-x86_64-pc-windows-msvc\\.zip$",
+      "target": "bandwhich",
+      "detectPath": "bandwhich",
+      "managedPaths": [
+        "bandwhich"
+      ],
+      "detectName": "bandwhich.exe"
+    },
+    {
+      "id": "mprocs",
+      "name": "mprocs (pvolok/dekit)",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/pvolok/dekit",
+      "installType": "github-zip",
+      "repo": "pvolok/dekit",
+      "assetRegex": "^mprocs-.*-windows-x86_64\\.zip$",
+      "target": "mprocs",
+      "detectPath": "mprocs",
+      "managedPaths": [
+        "mprocs"
+      ],
+      "detectName": "mprocs.exe"
+    }
+  ]
+}
