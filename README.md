@@ -23,6 +23,7 @@ C:\PS\
 ├─ Microsoft.Sysinternals.PsTools\   Microsoft PsTools
 ├─ binaries\                         standalone EXE files and command shims
 ├─ tools\                            isolated Python virtual environments
+│  └─ tdl-CompanionWulf\             isolated CompanionWulf environment
 ├─ apps\                             managed portable GUI applications
 ├─ WULF\                             installer infrastructure and state
 ├─ aria2\                            extracted command package
@@ -39,6 +40,7 @@ The current selectable catalog includes:
 
 - yt-dlp
 - tdl
+- tdl-CompanionWulf
 - qscreen / qscn
 - you-get
 - spotDL
@@ -52,6 +54,8 @@ The current selectable catalog includes:
 - MediaDownloader portable
 
 On a fresh installation, yt-dlp, tdl, and you-get are selected by default. Python-based tools require an available Python 3 installation and are isolated in their own virtual environments; only small command shims are placed in `C:\PS\binaries`.
+
+`tdl-CompanionWulf` is installed from its own upstream Git repository into an isolated virtual environment. It reuses the separately managed `tdl.exe` from `C:\PS\binaries` instead of bundling or redistributing a second tdl binary. Its SQLite queue database is stored in the user's local application-data area.
 
 ## Usage
 
@@ -87,7 +91,7 @@ https://download.sysinternals.com/files/PSTools.zip
 
 GitHub-hosted tools are resolved through each project's latest release metadata and matched against a Windows-specific asset rule stored in `WULF/tools.json`. This avoids pinning the installer to a stale release URL while keeping downloads on the original project source. When GitHub supplies a `sha256:` digest for a release asset, the downloaded file is verified before it is installed or extracted.
 
-Python-based tools are installed from their Python package distribution into dedicated virtual environments.
+Python-based tools are installed from their Python package distribution or an explicitly configured upstream Git package into dedicated virtual environments.
 
 ## Candidates intentionally not included in the command catalog
 
