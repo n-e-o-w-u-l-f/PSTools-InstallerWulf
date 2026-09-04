@@ -1,0 +1,64 @@
+name: Validate installer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'PSToolsWulfInstaller.bat'
+      - 'WULF/**'
+      - '.github/workflows/validate.yml'
+  pull_request:
+    paths:
+      - 'PSToolsWulfInstaller.bat'
+      - 'WULF/**'
+      - '.github/workflows/validate.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Parse PowerShell 5.1 scripts and manifest
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $files = @(
+            'WULF\Installer.ps1',
+            'WULF\Neonwulf_UI.ps1',
+            'WULF\Update_Paths.ps1'
+          )
+
+          foreach ($file in $files) {
+            $tokens = $null
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $file),
+              [ref]$tokens,
+              [ref]$errors
+            )
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_.Message }
+              throw "PowerShell parse failed: $file"
+            }
+            Write-Host "PASS $file"
+          }
+
+          $manifest = Get-Content 'WULF\tools.json' -Raw -Encoding UTF8 | ConvertFrom-Json
+          if ([int]$manifest.schemaVersion -ne 1) {
+            throw 'Unexpected tools.json schemaVersion'
+          }
+          if (@($manifest.tools).Count -lt 1) {
+            throw 'tools.json contains no tools'
+          }
+          Write-Host ("PASS tools.json entries={0}" -f @($manifest.tools).Count)
+
+      - name: Validate upstream sources
+        shell: powershell
+        run: |
+          & .\WULF\Installer.ps1 -Validate -NoPause
+          if ($LASTEXITCODE -ne 0) {
+            throw "Installer validation failed with exit code $LASTEXITCODE"
+          }
