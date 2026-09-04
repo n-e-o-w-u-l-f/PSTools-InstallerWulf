@@ -29,7 +29,8 @@ function Test-Administrator {
 function Set-UiState {
     param(
         [string]$Action,
-        [string]$Detail = ''
+        [string]$Detail = '',
+        [string]$Hint = ''
     )
 
     if ($Embedded) { return }
@@ -38,7 +39,7 @@ function Set-UiState {
         action = $Action
         detail = $Detail
         menu = @()
-        hint = ''
+        hint = $Hint
     }
 
     $json = $state | ConvertTo-Json -Compress
@@ -255,8 +256,7 @@ try {
         exit 0
     }
 
-    Set-UiState 'PATH-Update abgeschlossen' $result
-    Set-UiState 'PATH-Update abgeschlossen' '[OK] ENTER zum Schliessen'
+    Set-UiState 'PATH-Update abgeschlossen' $result 'ENTER zum Schliessen'
     Wait-UiExit
     exit 0
 }
