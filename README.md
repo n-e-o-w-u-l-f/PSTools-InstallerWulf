@@ -47,6 +47,11 @@ The current selectable catalog includes:
 - aria2
 - gallery-dl
 - scdl
+- jq
+- ripgrep / rg
+- fd
+- fzf
+- bat
 - doggo
 - bandwhich
 - mprocs from `pvolok/dekit`
@@ -55,7 +60,9 @@ The current selectable catalog includes:
 
 On a fresh installation, yt-dlp, tdl, and you-get are selected by default. Python-based tools require an available Python 3 installation and are isolated in their own virtual environments; only small command shims are placed in `C:\PS\binaries`.
 
-`tdl-CompanionWulf` is installed from its own upstream source archive into an isolated virtual environment. It reuses the separately managed `tdl.exe` from `C:\PS\binaries` instead of bundling or redistributing a second tdl binary. Its SQLite queue database is stored in the user's local application-data area.
+`tdl-CompanionWulf` is installed from its own upstream source archive into an isolated virtual environment. It reuses the separately managed `tdl.exe` from `C:\PS\binaries` instead of bundling or redistributing a second tdl binary. Its SQLite queue database is stored in the user's local application-data area. Keep `tdl` selected when using CompanionWulf.
+
+Portable single-command packages such as jq, rg, fd, fzf and bat are reduced to their executable command during installation and placed directly in `C:\PS\binaries`.
 
 ## Usage
 
@@ -100,7 +107,7 @@ Some requested projects are Windows-capable but do not yet fit the same portable
 - **MEGAcmd**: Windows-capable, but the provided GitHub repository does not publish GitHub release assets; it needs a separate official-installer integration.
 - **tgdl (Kikks/tgdl)**: no current GitHub release asset suitable for the automatic Windows release workflow was identified.
 - **RipMe**: cross-platform and Windows-capable, but distributed as a Java `.jar`; a Java runtime and a managed launcher need to be handled explicitly before adding it.
-- **signal-cli**: upstream explicitly supports Windows and bundles the Windows native library, but the JVM distribution currently requires a Java 25 runtime. Java/runtime detection, `.tar.gz` extraction and launcher handling should be added before enabling it in the catalog.
+- **signal-cli**: upstream explicitly supports Windows and bundles the Windows native library, but the JVM distribution currently requires a Java runtime. Java/runtime detection, `.tar.gz` extraction and launcher handling should be added before enabling it in the catalog.
 - **cobalt**: primarily a self-hosted service/API rather than a portable Windows command utility.
 - **vysheng/tg**: not a suitable current native Windows package for this installer model.
 - **curl**: modern Windows 10/11 systems already ship a system-managed curl; replacing the OS copy from this installer would create unnecessary precedence/version ambiguity.
