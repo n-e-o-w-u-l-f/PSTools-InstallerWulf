@@ -33,6 +33,20 @@
       "managedPaths": ["binaries\\tdl.exe"]
     },
     {
+      "id": "tdl-companionwulf",
+      "name": "tdl-CompanionWulf",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/n-e-o-w-u-l-f/tdl-CompanionWulf",
+      "installType": "pip-venv",
+      "package": "git+https://github.com/n-e-o-w-u-l-f/tdl-CompanionWulf.git",
+      "command": "tdl-companionwulf",
+      "target": "tools\\tdl-CompanionWulf",
+      "detectPath": "binaries\\tdl-companionwulf.cmd",
+      "managedPaths": ["tools\\tdl-CompanionWulf", "binaries\\tdl-companionwulf.cmd"],
+      "requires": "python"
+    },
+    {
       "id": "qscreen",
       "name": "qscreen (qscn)",
       "menu": true,
