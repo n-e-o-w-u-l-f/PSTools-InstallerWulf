@@ -1,8 +1,10 @@
 param(
     [ValidateSet('Installer','PathUpdater')]
     [string]$Mode = 'Installer',
+
     [Parameter(Mandatory=$true)]
     [string]$StatusFile,
+
     [Parameter(Mandatory=$true)]
     [string]$StopFile
 )
@@ -10,8 +12,6 @@ param(
 $ErrorActionPreference = 'SilentlyContinue'
 $esc = [char]27
 
-# Child process stays attached to the current cmd.exe console. If that parent
-# disappears unexpectedly, the renderer also exits instead of lingering.
 $parentPid = 0
 try {
     $parentPid = (Get-CimInstance Win32_Process -Filter "ProcessId=$PID").ParentProcessId
@@ -23,170 +23,252 @@ function Test-ParentAlive {
 }
 
 function Get-Layout {
-    $w = [Math]::Max(60, [Console]::WindowWidth)
-    $h = [Math]::Max(16, [Console]::WindowHeight)
-    # Leave the final terminal column untouched to avoid legacy conhost wrap/scroll.
+    $w = [Math]::Max(40, [Console]::WindowWidth)
+    $h = [Math]::Max(12, [Console]::WindowHeight)
     $dw = [Math]::Max(1, $w - 1)
-    $body1 = [Math]::Max(7, [int][Math]::Floor($h / 2))
-    $body2 = [Math]::Min($h - 5, $body1 + 2)
-    $footer1 = $h - 3
-    $footer2 = $h - 2
-    $footer3 = $h - 1
-    $footer4 = $h
+
+    $footer1 = [Math]::Max(8, $h - 4)
+    $footer2 = [Math]::Max(9, $h - 3)
+    $footer3 = [Math]::Max(10, $h - 2)
+    $footer4 = [Math]::Max(11, $h - 1)
+    $footer5 = $h
+
     [pscustomobject]@{
-        Width=$w; DrawWidth=$dw; Height=$h; Body1=$body1; Body2=$body2;
-        Footer1=$footer1; Footer2=$footer2; Footer3=$footer3; Footer4=$footer4
+        Width=$w
+        DrawWidth=$dw
+        Height=$h
+        BodyStart=5
+        BodyEnd=[Math]::Max(6, $footer1 - 1)
+        Footer1=$footer1
+        Footer2=$footer2
+        Footer3=$footer3
+        Footer4=$footer4
+        Footer5=$footer5
     }
 }
 
 if ($Mode -eq 'PathUpdater') {
     $head1 = 'C:\PS  //  SYSTEM PATH UPDATER'
-    $head2 = 'Rekursive Verzeichniserkennung  //  Machine PATH'
-    $foot3 = 'C:\PS  //  Automatische PATH-Erkennung'
-    $foot4 = 'Update laeuft  //  Live-Status in der Bildschirmmitte'
+    $head2 = 'Command-Erkennung  //  Machine PATH'
+    $foot1 = 'C:\PS  //  Automatische Command-Erkennung'
+    $foot2 = 'Nur Verzeichnisse mit EXE/CMD/BAT/COM werden in PATH aufgenommen'
 } else {
-    $head1 = 'C:\PS  //  PsTools + WindowsApps Permissions'
-    $head2 = 'Microsoft.Sysinternals.PsTools  //  TrustedInstaller-safe ACL'
-    $foot3 = 'C:\PS  //  PsTools  //  WindowsApps ACL  //  SYSTEM-PATH'
-    $foot4 = 'Installation laeuft  //  Live-Status in der Bildschirmmitte'
+    $head1 = 'C:\PS  //  POWERSHELL TOOLS INSTALLER'
+    $head2 = 'PsTools  //  Tool Manager  //  SYSTEM PATH'
+    $foot1 = 'C:\PS  //  PsTools  //  binaries  //  Tool Manager'
+    $foot2 = 'Downloads direkt von den jeweiligen Originalquellen'
 }
 
-# Neonwulf RGB cycle. Saturated, but deliberately never pale/bright so white
-# text remains readable. The phase moves continuously from left to right.
 $stops = @(
-    @(10, 12, 56),     # midnight blue
-    @(12, 34, 112),    # deep blue
-    @(10, 82, 160),    # deep cyan-blue
-    @(42, 54, 166),    # electric blue/violet
-    @(102, 32, 170),   # violet
-    @(170, 30, 146),   # neon pink
-    @(184, 46, 118),   # rose
-    @(126, 34, 168),   # purple
-    @(28, 72, 168),    # blue
-    @(10, 12, 56)      # midnight blue
+    @(8, 10, 48),
+    @(10, 28, 104),
+    @(8, 78, 158),
+    @(42, 50, 166),
+    @(104, 28, 168),
+    @(170, 26, 144),
+    @(186, 42, 116),
+    @(124, 30, 166),
+    @(26, 66, 164),
+    @(8, 10, 48)
 )
 
-function Get-RgbAt([double]$x, [double]$phase, [double]$mul) {
+function Get-RgbAt([double]$x, [double]$phase, [double]$brightness) {
     $cycle = $stops.Count - 1
     $p = (($x + $phase) % 1.0)
     if ($p -lt 0) { $p += 1.0 }
+
     $scaled = $p * $cycle
-    $seg = [Math]::Min([int][Math]::Floor($scaled), $cycle - 1)
-    $t = $scaled - $seg
-    $a = $stops[$seg]
-    $b = $stops[$seg + 1]
-    $r = [int][Math]::Round(($a[0] + (($b[0] - $a[0]) * $t)) * $mul)
-    $g = [int][Math]::Round(($a[1] + (($b[1] - $a[1]) * $t)) * $mul)
-    $bl = [int][Math]::Round(($a[2] + (($b[2] - $a[2]) * $t)) * $mul)
-    # Hard caps preserve white-text contrast.
-    @([Math]::Min(190,$r), [Math]::Min(150,$g), [Math]::Min(180,$bl))
+    $segment = [Math]::Min([int][Math]::Floor($scaled), $cycle - 1)
+    $t = $scaled - $segment
+    $a = $stops[$segment]
+    $b = $stops[$segment + 1]
+
+    $r = [int][Math]::Round(($a[0] + (($b[0] - $a[0]) * $t)) * $brightness)
+    $g = [int][Math]::Round(($a[1] + (($b[1] - $a[1]) * $t)) * $brightness)
+    $bl = [int][Math]::Round(($a[2] + (($b[2] - $a[2]) * $t)) * $brightness)
+
+    @(
+        [Math]::Min(190, [Math]::Max(0, $r)),
+        [Math]::Min(150, [Math]::Max(0, $g)),
+        [Math]::Min(180, [Math]::Max(0, $bl))
+    )
 }
 
 function Add-GradientRow(
-    [System.Text.StringBuilder]$sb,
-    [int]$row,
-    [string]$text,
-    [double]$brightness,
-    [double]$phase,
-    [int]$drawWidth
+    [System.Text.StringBuilder]$Builder,
+    [int]$Row,
+    [string]$Text,
+    [double]$Brightness,
+    [double]$Phase,
+    [int]$DrawWidth
 ) {
-    if ($null -eq $text) { $text = '' }
-    $start = [Math]::Max(0, [int][Math]::Floor(($drawWidth - $text.Length) / 2))
-    [void]$sb.Append("$esc[$row;1H")
-    $den = [Math]::Max(1, $drawWidth - 1)
-    for ($i = 0; $i -lt $drawWidth; $i++) {
-        $rgb = Get-RgbAt ($i / [double]$den) $phase $brightness
-        $ch = ' '
-        $ti = $i - $start
-        if ($ti -ge 0 -and $ti -lt $text.Length) { $ch = $text[$ti] }
-        [void]$sb.Append("$esc[48;2;$($rgb[0]);$($rgb[1]);$($rgb[2])m$esc[38;2;255;255;255m$ch")
+    if ($Row -lt 1) { return }
+    if ($null -eq $Text) { $Text = '' }
+
+    if ($Text.Length -gt ($DrawWidth - 2)) {
+        $Text = $Text.Substring(0, [Math]::Max(0, $DrawWidth - 5)) + '...'
     }
-    [void]$sb.Append("$esc[0m")
+
+    $start = [Math]::Max(0, [int][Math]::Floor(($DrawWidth - $Text.Length) / 2))
+    $den = [Math]::Max(1, $DrawWidth - 1)
+
+    [void]$Builder.Append("$esc[$Row;1H")
+
+    $lastKey = ''
+    for ($i = 0; $i -lt $DrawWidth; $i++) {
+        $rgb = Get-RgbAt ($i / [double]$den) $Phase $Brightness
+        $key = "$($rgb[0]);$($rgb[1]);$($rgb[2])"
+
+        if ($key -ne $lastKey) {
+            [void]$Builder.Append("$esc[48;2;$key" + 'm')
+            $lastKey = $key
+        }
+
+        $char = ' '
+        $textIndex = $i - $start
+        if ($textIndex -ge 0 -and $textIndex -lt $Text.Length) {
+            $char = $Text[$textIndex]
+            [void]$Builder.Append("$esc[38;2;255;255;255m$char")
+        } else {
+            [void]$Builder.Append(' ')
+        }
+    }
+
+    [void]$Builder.Append("$esc[0m")
 }
 
-function Add-CenteredStatus(
-    [System.Text.StringBuilder]$sb,
-    [int]$row,
-    [string]$text,
-    [string]$fg,
-    [int]$width
+function Limit-Text([string]$Text, [int]$Width) {
+    if ($null -eq $Text) { return '' }
+    $limit = [Math]::Max(1, $Width - 4)
+    if ($Text.Length -le $limit) { return $Text }
+    if ($limit -le 3) { return $Text.Substring(0, $limit) }
+    return $Text.Substring(0, $limit - 3) + '...'
+}
+
+function Add-CenteredLine(
+    [System.Text.StringBuilder]$Builder,
+    [int]$Row,
+    [string]$Text,
+    [string]$Color,
+    [int]$Width
 ) {
-    if ($null -eq $text) { $text = '' }
-    $col = [Math]::Max(1, [int][Math]::Floor(($width - $text.Length) / 2) + 1)
-    [void]$sb.Append("$esc[$row;1H$esc[2K$esc[48;2;0;0;0m$esc[$fg" + 'm')
-    [void]$sb.Append("$esc[$row;${col}H$text$esc[0m")
+    $Text = Limit-Text $Text $Width
+    $col = [Math]::Max(1, [int][Math]::Floor(($Width - $Text.Length) / 2) + 1)
+    [void]$Builder.Append("$esc[$Row;1H$esc[2K")
+    [void]$Builder.Append("$esc[$Row;${col}H$esc[$Color" + "m$Text$esc[0m")
 }
 
-function Read-Status {
-    if (-not (Test-Path -LiteralPath $StatusFile)) { return @('Initialisiere ...','') }
+function Read-State {
+    if (-not (Test-Path -LiteralPath $StatusFile)) {
+        return [pscustomobject]@{
+            action='Initialisiere ...'
+            detail=''
+            menu=@()
+            hint=''
+        }
+    }
+
     try {
-        $lines = @(Get-Content -LiteralPath $StatusFile -Encoding Default -ErrorAction Stop)
-        $a = if ($lines.Count -ge 1) { [string]$lines[0] } else { '' }
-        $d = if ($lines.Count -ge 2) { [string]$lines[1] } else { '' }
-        return @($a,$d)
+        $raw = Get-Content -LiteralPath $StatusFile -Raw -Encoding UTF8 -ErrorAction Stop
+        if ([string]::IsNullOrWhiteSpace($raw)) { throw 'empty' }
+
+        $state = $raw | ConvertFrom-Json -ErrorAction Stop
+        $menu = @()
+        if ($null -ne $state.menu) { $menu = @($state.menu) }
+
+        return [pscustomobject]@{
+            action=[string]$state.action
+            detail=[string]$state.detail
+            menu=$menu
+            hint=[string]$state.hint
+        }
     } catch {
-        return @('Initialisiere ...','')
+        return [pscustomobject]@{
+            action='Initialisiere ...'
+            detail=''
+            menu=@()
+            hint=''
+        }
     }
 }
 
-function DetailColor([string]$text) {
-    if ($text -like '[[]OK[]]*')      { return '38;2;105;255;150' }
-    if ($text -like '[[]WARNUNG[]]*') { return '38;2;255;205;70' }
-    if ($text -like '[[]FEHLER[]]*')  { return '38;2;255;90;110' }
+function Detail-Color([string]$Text) {
+    if ($Text -like '[[]OK[]]*')      { return '38;2;105;255;150' }
+    if ($Text -like '[[]WARNUNG[]]*') { return '38;2;255;205;70' }
+    if ($Text -like '[[]FEHLER[]]*')  { return '38;2;255;90;110' }
     return '38;2;150;155;172'
 }
 
-try {
-    [Console]::CursorVisible = $false
-} catch {}
-
-# Disable line wrap where supported and clear once. From here on there is no
-# full-screen clear, only direct cursor-positioned updates.
+try { [Console]::CursorVisible = $false } catch {}
 [Console]::Write("$esc[?7l$esc[2J$esc[H$esc[?25l")
 
-$sw = [Diagnostics.Stopwatch]::StartNew()
-$lastStatusKey = $null
-$lastW = -1
-$lastH = -1
+$clock = [Diagnostics.Stopwatch]::StartNew()
+$lastWidth = -1
+$lastHeight = -1
+$lastBodyKey = $null
 
 try {
     while (-not (Test-Path -LiteralPath $StopFile) -and (Test-ParentAlive)) {
         $layout = Get-Layout
-        $phase = ($sw.Elapsed.TotalSeconds * 0.085) % 1.0
-        $sb = [System.Text.StringBuilder]::new(32768)
+        $phase = ($clock.Elapsed.TotalSeconds * 0.18) % 1.0
+        $builder = New-Object System.Text.StringBuilder 32768
 
-        # Clear only when the terminal geometry changes.
-        if ($layout.Width -ne $lastW -or $layout.Height -ne $lastH) {
-            [void]$sb.Append("$esc[2J$esc[H")
-            $lastW = $layout.Width
-            $lastH = $layout.Height
-            $lastStatusKey = $null
+        if ($layout.Width -ne $lastWidth -or $layout.Height -ne $lastHeight) {
+            [void]$builder.Append("$esc[2J$esc[H")
+            $lastWidth = $layout.Width
+            $lastHeight = $layout.Height
+            $lastBodyKey = $null
         }
 
-        # HEADER: 2 animated neon rows + 2 inward rows that fade to black.
-        Add-GradientRow $sb 1 $head1 1.00 $phase $layout.DrawWidth
-        Add-GradientRow $sb 2 $head2 0.88 ($phase + 0.035) $layout.DrawWidth
-        Add-GradientRow $sb 3 ''     0.36 ($phase + 0.070) $layout.DrawWidth
-        Add-GradientRow $sb 4 ''     0.10 ($phase + 0.105) $layout.DrawWidth
+        Add-GradientRow $builder 1 $head1 1.00 $phase $layout.DrawWidth
+        Add-GradientRow $builder 2 $head2 0.86 ($phase + 0.030) $layout.DrawWidth
+        Add-GradientRow $builder 3 ''     0.34 ($phase + 0.060) $layout.DrawWidth
+        Add-GradientRow $builder 4 ''     0.09 ($phase + 0.090) $layout.DrawWidth
 
-        # FOOTER: symmetric black-to-neon transition toward the bottom edge.
-        Add-GradientRow $sb $layout.Footer1 ''     0.10 ($phase + 0.105) $layout.DrawWidth
-        Add-GradientRow $sb $layout.Footer2 ''     0.36 ($phase + 0.070) $layout.DrawWidth
-        Add-GradientRow $sb $layout.Footer3 $foot3 0.88 ($phase + 0.035) $layout.DrawWidth
-        Add-GradientRow $sb $layout.Footer4 $foot4 1.00 $phase $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer1 $foot1 0.96 ($phase + 0.020) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer2 $foot2 0.70 ($phase + 0.050) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer3 ''     0.38 ($phase + 0.080) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer4 ''     0.17 ($phase + 0.110) $layout.DrawWidth
+        Add-GradientRow $builder $layout.Footer5 ''     0.055 ($phase + 0.140) $layout.DrawWidth
 
-        # The renderer owns all terminal output. Status is pulled from a tiny file,
-        # so batch commands cannot fight the animation for the cursor.
-        $status = Read-Status
-        $key = "$($status[0])`n$($status[1])@$($layout.Body1),$($layout.Body2),$($layout.Width)"
-        if ($key -ne $lastStatusKey) {
-            Add-CenteredStatus $sb $layout.Body1 $status[0] '38;2;80;225;255' $layout.Width
-            Add-CenteredStatus $sb $layout.Body2 $status[1] (DetailColor $status[1]) $layout.Width
-            $lastStatusKey = $key
+        $state = Read-State
+        $bodyKey = ($state | ConvertTo-Json -Compress -Depth 4) + "@$($layout.Width)x$($layout.Height)"
+
+        if ($bodyKey -ne $lastBodyKey) {
+            for ($row = $layout.BodyStart; $row -le $layout.BodyEnd; $row++) {
+                [void]$builder.Append("$esc[$row;1H$esc[2K")
+            }
+
+            $available = [Math]::Max(1, $layout.BodyEnd - $layout.BodyStart + 1)
+            $menuLines = @($state.menu)
+            $needed = 2 + $menuLines.Count + $(if ($state.hint) { 1 } else { 0 })
+            $startRow = $layout.BodyStart + [Math]::Max(0, [int][Math]::Floor(($available - $needed) / 2))
+
+            Add-CenteredLine $builder $startRow $state.action '38;2;80;225;255' $layout.Width
+            Add-CenteredLine $builder ($startRow + 1) $state.detail (Detail-Color $state.detail) $layout.Width
+
+            $row = $startRow + 3
+            foreach ($line in $menuLines) {
+                if ($row -gt $layout.BodyEnd) { break }
+
+                $color = '38;2;210;210;225'
+                if ($line -like '> *') { $color = '38;2;255;110;215' }
+                elseif ($line -match '\[x\]') { $color = '38;2;105;255;150' }
+                elseif ($line -match '\[!\]') { $color = '38;2;255;205;70' }
+
+                Add-CenteredLine $builder $row ([string]$line) $color $layout.Width
+                $row++
+            }
+
+            if ($state.hint -and $layout.BodyEnd -ge $row) {
+                Add-CenteredLine $builder $layout.BodyEnd $state.hint '38;2;120;125;145' $layout.Width
+            }
+
+            $lastBodyKey = $bodyKey
         }
 
-        [Console]::Write($sb.ToString())
-        Start-Sleep -Milliseconds 65
+        [Console]::Write($builder.ToString())
+        Start-Sleep -Milliseconds 40
     }
 }
 finally {
