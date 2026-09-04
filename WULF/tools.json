@@ -16,9 +16,7 @@
       "assetRegex": "^yt-dlp\\.exe$",
       "target": "binaries\\yt-dlp.exe",
       "detectPath": "binaries\\yt-dlp.exe",
-      "managedPaths": [
-        "binaries\\yt-dlp.exe"
-      ]
+      "managedPaths": ["binaries\\yt-dlp.exe"]
     },
     {
       "id": "tdl",
@@ -32,9 +30,7 @@
       "extractName": "tdl.exe",
       "target": "binaries\\tdl.exe",
       "detectPath": "binaries\\tdl.exe",
-      "managedPaths": [
-        "binaries\\tdl.exe"
-      ]
+      "managedPaths": ["binaries\\tdl.exe"]
     },
     {
       "id": "qscreen",
@@ -47,9 +43,7 @@
       "assetRegex": "^qscn-windows-amd64\\.exe\\.gz$",
       "target": "binaries\\qscn.exe",
       "detectPath": "binaries\\qscn.exe",
-      "managedPaths": [
-        "binaries\\qscn.exe"
-      ]
+      "managedPaths": ["binaries\\qscn.exe"]
     },
     {
       "id": "you-get",
@@ -62,10 +56,7 @@
       "command": "you-get",
       "target": "tools\\you-get",
       "detectPath": "binaries\\you-get.cmd",
-      "managedPaths": [
-        "tools\\you-get",
-        "binaries\\you-get.cmd"
-      ],
+      "managedPaths": ["tools\\you-get", "binaries\\you-get.cmd"],
       "requires": "python"
     },
     {
@@ -79,9 +70,7 @@
       "assetRegex": "^spotdl-.*-win32\\.exe$",
       "target": "binaries\\spotdl.exe",
       "detectPath": "binaries\\spotdl.exe",
-      "managedPaths": [
-        "binaries\\spotdl.exe"
-      ]
+      "managedPaths": ["binaries\\spotdl.exe"]
     },
     {
       "id": "aria2",
@@ -94,9 +83,7 @@
       "assetRegex": "^aria2-.*-win-64bit-build1\\.zip$",
       "target": "aria2",
       "detectPath": "aria2",
-      "managedPaths": [
-        "aria2"
-      ],
+      "managedPaths": ["aria2"],
       "detectName": "aria2c.exe"
     },
     {
@@ -110,10 +97,7 @@
       "command": "gallery-dl",
       "target": "tools\\gallery-dl",
       "detectPath": "binaries\\gallery-dl.cmd",
-      "managedPaths": [
-        "tools\\gallery-dl",
-        "binaries\\gallery-dl.cmd"
-      ],
+      "managedPaths": ["tools\\gallery-dl", "binaries\\gallery-dl.cmd"],
       "requires": "python"
     },
     {
@@ -127,10 +111,7 @@
       "command": "scdl",
       "target": "tools\\scdl",
       "detectPath": "binaries\\scdl.cmd",
-      "managedPaths": [
-        "tools\\scdl",
-        "binaries\\scdl.cmd"
-      ],
+      "managedPaths": ["tools\\scdl", "binaries\\scdl.cmd"],
       "requires": "python"
     },
     {
@@ -144,9 +125,7 @@
       "assetRegex": "^doggo-windows-x86_64\\.zip$",
       "target": "doggo",
       "detectPath": "doggo",
-      "managedPaths": [
-        "doggo"
-      ],
+      "managedPaths": ["doggo"],
       "detectName": "doggo.exe"
     },
     {
@@ -160,9 +139,7 @@
       "assetRegex": "^bandwhich-.*-x86_64-pc-windows-msvc\\.zip$",
       "target": "bandwhich",
       "detectPath": "bandwhich",
-      "managedPaths": [
-        "bandwhich"
-      ],
+      "managedPaths": ["bandwhich"],
       "detectName": "bandwhich.exe"
     },
     {
@@ -176,10 +153,34 @@
       "assetRegex": "^mprocs-.*-windows-x86_64\\.zip$",
       "target": "mprocs",
       "detectPath": "mprocs",
-      "managedPaths": [
-        "mprocs"
-      ],
+      "managedPaths": ["mprocs"],
       "detectName": "mprocs.exe"
+    },
+    {
+      "id": "parabolic",
+      "name": "Parabolic",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/NickvisionApps/Parabolic",
+      "installType": "github-zip",
+      "repo": "NickvisionApps/Parabolic",
+      "assetRegex": "^NickvisionParabolicPortable\\.zip$",
+      "target": "apps\\Parabolic",
+      "detectPath": "apps\\Parabolic",
+      "managedPaths": ["apps\\Parabolic"]
+    },
+    {
+      "id": "media-downloader",
+      "name": "MediaDownloader",
+      "menu": true,
+      "defaultSelected": false,
+      "homepage": "https://github.com/mhogomchungu/media-downloader",
+      "installType": "github-zip",
+      "repo": "mhogomchungu/media-downloader",
+      "assetRegex": "^MediaDownloaderQt6-.*\\.zip$",
+      "target": "apps\\MediaDownloader",
+      "detectPath": "apps\\MediaDownloader",
+      "managedPaths": ["apps\\MediaDownloader"]
     }
   ]
 }
